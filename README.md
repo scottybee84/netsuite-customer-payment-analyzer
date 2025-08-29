@@ -1,29 +1,28 @@
 ## 📋 About This Project
 
-**AI-Powered Customer AR Analysis**
+Payment Analytics for NetSuite — SuiteScript examples that analyze customer payment behavior and receivables.
 
-This project demonstrates how to build AI-powered customer analysis tools in NetSuite using Google Gemini AI to analyze customer payment behavior and accounts receivable risk.
+What the scripts do (concise):
 
-### What It Does:
+- Suitelet `sl_payment_analytics` (server-side):
+   - Renders a Payment Analytics dashboard form with a customer selector and action buttons.
+   - Handles POST actions from the client: `getPaymentAnalytics`, `getTopRiskCustomers`, and `getCashFlowForecast`.
+   - Runs NetSuite searches to fetch customer records and invoices, computes a payment score, risk assessment, recommendations, and a short-term cash flow forecast.
+   - Returns JSON responses consumed by the client script.
 
-- **Customer Risk Analysis**: Analyzes customer payment patterns and outstanding invoices
-- **AI Insights**: Uses Google Gemini AI to provide risk assessments and recommendations
-- **Interactive Interface**: Provides a web-based form for customer selection and analysis
+- Client Script `cl_payment_analytics` (browser-side):
+   - Initializes the dashboard UI, wires the Analyze / Risk / Forecast buttons, and performs fetch POSTs to the Suitelet.
+   - Renders the returned JSON into a dashboard UI: payment score, risk list, invoice table, cash flow cards, and recommendations.
+   - Shows loading states, error messages, and formats numbers/dates for display.
 
-### Key Files:
+Key behaviors and features:
 
-- **`sl_ai_customer_analyzer.ts`**: Suitelet that creates the web interface and handles AI API calls
-- **`cl_ai_customer_analyzer.ts`**: Client script that manages the frontend interactions and form behavior
+- Calculates a payment score and grade based on overdue rate and outstanding amounts.
+- Produces a ranked list of high-risk customers using balance, credit utilization and simple heuristics.
+- Generates a cash flow forecast bucketed by due date ranges (7/30/60/90 days) and overdue totals.
+- Designed for local development with the `@scottybee84/mock-netsuite` runtime (no real NetSuite account required).
 
-### How It Works:
-
-1. User selects a customer from the dropdown
-2. System searches for customer's invoices and calculates outstanding amounts
-3. Invoice data is sent to Google Gemini AI for risk analysis
-4. AI returns structured analysis with risk level, summary, and recommended actions
-5. Results are displayed in an easy-to-read format with suggested next steps
-
-_📝 Note: This section can be easily customized for different projects by editing the content above._
+If you want the README to mention AI integration notes (Gemini API key usage and which script calls the AI), I can add a short subsection describing where to plug API keys and how AI is used (if applicable).
 
 ## 🎯 Out-of-the-Box Ready
 

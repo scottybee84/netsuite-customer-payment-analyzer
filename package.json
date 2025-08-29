@@ -1,8 +1,8 @@
 {
-  "name": "netsuite-ai-customer-ar-analysis",
+  "name": "netsuite-customer-payment-analyzer",
   "version": "1.0.0",
   "type": "module",
-  "description": "NetSuite AI Customer AR Analysis using mock-netsuite library",
+  "description": "NetSuite Customer Payment Analytics — Suitelet and Client scripts to analyze customer payment behavior, receivables risk, and cash-flow forecasts. Works with @scottybee84/mock-netsuite for local development.",
   "main": "src/index.js",
   "config": {
     "developmentMode": "typescript",
