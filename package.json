@@ -1,0 +1,55 @@
+{
+  "name": "netsuite-cust-payment-analytics",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "NetSuite AI Customer AR Analysis using mock-netsuite library",
+  "main": "src/index.js",
+  "config": {
+    "developmentMode": "typescript",
+    "comment": "Set developmentMode to 'javascript' to edit JS files directly, or 'typescript' to use TS compilation"
+  },
+  "scripts": {
+    "preinstall": "bash ./scripts/preinstall.sh",
+    "reinstall": "bash -lc 'export NVM_DIR=\"$HOME/.nvm\" && [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\" && nvm install 20 && nvm use 20 && rm -rf node_modules && npm ci && npm rebuild better-sqlite3 || true && npm run build'",
+    "build": "npm run build:check-mode",
+    "build:typescript": "tsc -p tsconfig.json && node ./node_modules/@scottybee84/mock-netsuite/scripts/strip-helpers.cjs src/suitescript",
+    "build:javascript": "echo 'JavaScript mode: No compilation needed. Edit files in src/suitescript/ directly.'",
+    "build:check-mode": "node -e \"const mode = require('./package.json').config.developmentMode; if (mode === 'javascript') { require('child_process').execSync('npm run build:javascript', {stdio: 'inherit'}); } else { require('child_process').execSync('npm run build:typescript', {stdio: 'inherit'}); }\"",
+    "dev": "npm run build && npm start",
+    "start": "npm run setup-db && mock-netsuite --with-suitelet ./src/suitescript/sl_ai_customer_analyzer.js",
+    "test": "npm run build && npm start",
+    "test:jest": "jest --runInBand",
+    "clean": "rm -rf src",
+    "clean:all": "rm -rf src && rm -rf node_modules && npm install",
+    "switch:javascript": "node -e \"const pkg = require('./package.json'); pkg.config.developmentMode = 'javascript'; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\\n');\" && node scripts/setup-js-mode.js",
+    "switch:typescript": "node -e \"const pkg = require('./package.json'); pkg.config.developmentMode = 'typescript'; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\\n'); console.log('✅ Switched to TypeScript development mode. Edit files in ts_src/suitescript/.');\"",
+    "mode": "node -e \"const mode = require('./package.json').config.developmentMode; console.log('Current development mode:', mode); console.log(mode === 'typescript' ? 'Edit files in: ts_src/suitescript/' : 'Edit files in: src/suitescript/'); console.log('To switch modes, run: npm run switch:javascript or npm run switch:typescript');\"",
+    "seed": "node seed.js",
+    "setup-db": "npm run seed && cp data.db node_modules/@scottybee84/mock-netsuite/data.db",
+    "setup": "bash ./scripts/setup.sh",
+    "suitescript": "node -e \"process.platform === 'win32' ? require('child_process').spawn('powershell', ['-ExecutionPolicy', 'Bypass', '-File', './run-suitescript.ps1'], {stdio: 'inherit'}) : require('child_process').spawn('./run-suitescript.sh', [], {stdio: 'inherit'})\"",
+    "suitescript:windows": "powershell -ExecutionPolicy Bypass -File ./run-suitescript.ps1",
+    "suitescript:unix": "./run-suitescript.sh",
+    "ai-analyzer": "npm run suitescript",
+    "demo": "npm run suitescript"
+  },
+  "volta": {
+    "node": "20",
+    "npm": "10"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.0.0",
+    "@types/node": "^20.19.11",
+    "better-sqlite3": "^12.2.0",
+    "typescript": "^5.9.2",
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Scott Brown",
+  "license": "MIT",
+  "dependencies": {
+    "@scottybee84/mock-netsuite": "0.5.23"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "AMD",
+    "moduleResolution": "node",
+    "outDir": "./src",
+    "rootDir": "./ts_src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": false,
+    "sourceMap": false,
+    "types": ["node"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@scottybee84/mock-netsuite/types"
+    ]
+  },
+  "include": ["ts_src/**/*"],
+  "exclude": ["node_modules", "src"],
+  "files": ["./node_modules/@scottybee84/mock-netsuite/types/netsuite.d.ts"]
+}
