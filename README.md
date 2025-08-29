@@ -5,15 +5,16 @@ Payment Analytics for NetSuite — SuiteScript examples that analyze customer pa
 What the scripts do (concise):
 
 - Suitelet `sl_payment_analytics` (server-side):
-   - Renders a Payment Analytics dashboard form with a customer selector and action buttons.
-   - Handles POST actions from the client: `getPaymentAnalytics`, `getTopRiskCustomers`, and `getCashFlowForecast`.
-   - Runs NetSuite searches to fetch customer records and invoices, computes a payment score, risk assessment, recommendations, and a short-term cash flow forecast.
-   - Returns JSON responses consumed by the client script.
+
+  - Renders a Payment Analytics dashboard form with a customer selector and action buttons.
+  - Handles POST actions from the client: `getPaymentAnalytics`, `getTopRiskCustomers`, and `getCashFlowForecast`.
+  - Runs NetSuite searches to fetch customer records and invoices, computes a payment score, risk assessment, recommendations, and a short-term cash flow forecast.
+  - Returns JSON responses consumed by the client script.
 
 - Client Script `cl_payment_analytics` (browser-side):
-   - Initializes the dashboard UI, wires the Analyze / Risk / Forecast buttons, and performs fetch POSTs to the Suitelet.
-   - Renders the returned JSON into a dashboard UI: payment score, risk list, invoice table, cash flow cards, and recommendations.
-   - Shows loading states, error messages, and formats numbers/dates for display.
+  - Initializes the dashboard UI, wires the Analyze / Risk / Forecast buttons, and performs fetch POSTs to the Suitelet.
+  - Renders the returned JSON into a dashboard UI: payment score, risk list, invoice table, cash flow cards, and recommendations.
+  - Shows loading states, error messages, and formats numbers/dates for display.
 
 Key behaviors and features:
 
@@ -21,8 +22,6 @@ Key behaviors and features:
 - Produces a ranked list of high-risk customers using balance, credit utilization and simple heuristics.
 - Generates a cash flow forecast bucketed by due date ranges (7/30/60/90 days) and overdue totals.
 - Designed for local development with the `@scottybee84/mock-netsuite` runtime (no real NetSuite account required).
-
-If you want the README to mention AI integration notes (Gemini API key usage and which script calls the AI), I can add a short subsection describing where to plug API keys and how AI is used (if applicable).
 
 ## 🎯 Out-of-the-Box Ready
 
@@ -36,6 +35,7 @@ This project works **immediately** on Windows, macOS, and Linux. Just install No
 - **🌍 Cross-Platform**: Works on Windows, macOS, and Linux with automatic platform detection
 
 ## 🚀 Quick Start
+
 ### One-line start
 
 If you already have the prerequisites (Node.js 20 recommended and npm), you can get everything running with a single command from the project root:
@@ -149,6 +149,7 @@ The project automatically detects your operating system and uses the appropriate
 
 1. Clone or download this repository
 2. Install / prepare dependencies
+
    ```bash
    # No manual `npm install` required. Run the launcher which will install deps if needed:
    npm run suitescript
@@ -441,7 +442,7 @@ You'll need to modify the scripts to use NetSuite's secure credential storage in
 
 - **Node version**: Must be 18, 20, or 22 (native module compatibility)
 - **Rebuild**: `npm rebuild` if you switched Node versions
- - **Clean install**: `rm -rf node_modules && npm run reinstall`
+- **Clean install**: `rm -rf node_modules && npm run reinstall`
 
 ### Getting Help
 
