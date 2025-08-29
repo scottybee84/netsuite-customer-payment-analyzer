@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        default: '20'
+      install_command:
+        description: 'Install command to run (CI friendly)'
+        required: false
+        default: 'npm ci'
+      build_command:
+        description: 'Build command to run'
+        required: false
+        default: 'npm run build'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PORT: '3001'
+      NODE_VERSION: ${{ github.event.inputs.node_version || '20' }}
+      INSTALL_COMMAND: ${{ github.event.inputs.install_command || 'npm ci' }}
+      BUILD_COMMAND: ${{ github.event.inputs.build_command || 'npm run build' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies (CI friendly)
+        run: |
+          echo "Running install command: $INSTALL_COMMAND"
+          eval $INSTALL_COMMAND
+          npm rebuild better-sqlite3 || true
+          echo "Running build command: $BUILD_COMMAND"
+          eval $BUILD_COMMAND
+
+      - name: Run Jest unit tests
+        run: |
+          echo "Running Jest tests"
+          npm run test:jest
+
+      - name: Test all suitelets in src/suitescript
+        run: |
+          set -euo pipefail
+          # ensure DB and artifacts are prepared
+          npm run setup-db
+
+          FILES=(src/suitescript/sl_*.js)
+          if [ ! -e "${FILES[0]}" ]; then
+            echo "No suitelet files found in src/suitescript. Nothing to test.";
+            exit 0
+          fi
+
+          for f in "${FILES[@]}"; do
+            echo "\n=== Testing suitelet: $f ==="
+            NAME=$(basename "$f" .js)
+
+            echo "Starting runtime for $NAME (SUITELET_SCRIPT_PATH=$f PORT=$PORT)"
+            nohup env SUITELET_SCRIPT_PATH="$f" PORT="$PORT" node ./node_modules/@scottybee84/mock-netsuite/suitescript-runtime.js > runtime.log 2>&1 &
+            PID=$!
+            echo "runtime PID: $PID"
+
+            URL="http://localhost:${PORT}/suitelet/${NAME}?id=1"
+            echo "Waiting for $URL to respond..."
+            success=0
+            for i in $(seq 1 30); do
+              if curl -sSf "$URL" > /dev/null; then
+                echo "$NAME is up"
+                success=1
+                break
+              fi
+              sleep 2
+            done
+
+            if [ "$success" -ne 1 ]; then
+              echo "Suitelet $NAME did not respond in time. Dumping runtime.log:";
+              tail -n +1 runtime.log || true
+              kill "$PID" || true
+              exit 1
+            fi
+
+            echo "Smoke testing $URL"
+            HTTP=$(curl -sS -w "%{http_code}" "$URL" -o /tmp/suitelet.html) || true
+            echo "HTTP status: $HTTP"
+            head -n 60 /tmp/suitelet.html || true
+            if [ "$HTTP" != "200" ]; then
+              echo "Unexpected HTTP status for $NAME: $HTTP"
+              kill "$PID" || true
+              exit 1
+            fi
+
+            echo "Stopping runtime PID $PID"
+            kill "$PID" || true
+            sleep 1
+          done
+
+  # smoke testing is handled per-suitelet in the loop above
+
+      - name: Teardown runtime
+        if: always()
+        run: |
+          if [ -f runtime.pid ]; then
+            kill $(cat runtime.pid) || true
+          fi
+          sleep 1

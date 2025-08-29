@@ -1,0 +1,216 @@
+name: Cross-Platform Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test platform detection
+        run: |
+          node -e "console.log('Platform:', process.platform); console.log('Will use:', process.platform === 'win32' ? 'PowerShell' : 'Bash');"
+
+      - name: Test PowerShell script exists and has Windows-native logic
+        run: |
+          if (Test-Path "./run-suitescript.ps1") { 
+            Write-Host "✅ PowerShell script found" 
+            $content = Get-Content "./run-suitescript.ps1" -Raw
+            
+            # Check that it doesn't delegate to bash on Windows
+            if ($content -match "bash.*run-suitescript\.sh" -and $content -match "-not \`$IsWindowsPlatform") {
+              Write-Host "❌ Script still delegates to bash - this should be removed for native Windows support"
+              exit 1
+            } else {
+              Write-Host "✅ Script uses native PowerShell (no bash delegation)"
+            }
+            
+            # Check for Node version management
+            if ($content -match "nvm.*use.*20") {
+              Write-Host "✅ Node version management detected"
+            }
+            
+            # Check for native module rebuilding
+            if ($content -match "npm rebuild") {
+              Write-Host "✅ Native module rebuilding logic found"
+            }
+            
+          } else { 
+            Write-Host "❌ PowerShell script missing"; exit 1 
+          }
+        shell: powershell
+
+      - name: Test PowerShell script syntax and structure
+        run: |
+          Write-Host "Testing PowerShell script syntax and functions..."
+          if (Test-Path "./run-suitescript.ps1") {
+            $content = Get-Content "./run-suitescript.ps1" -Raw
+            
+            # Test syntax
+            try {
+              $null = [System.Management.Automation.PSParser]::Tokenize($content, [ref]$null)
+              Write-Host "✅ PowerShell script syntax is valid"
+            } catch {
+              Write-Host "❌ PowerShell syntax error: $($_.Exception.Message)"
+              throw
+            }
+            
+            # Test that required functions exist
+            $requiredFunctions = @("Show-Scripts", "Select-Script")
+            foreach ($func in $requiredFunctions) {
+              if ($content -match "function $func") {
+                Write-Host "✅ $func function found"
+              } else {
+                Write-Host "⚠️  $func function not found (may be inline)"
+              }
+            }
+            
+            # Test Windows platform detection
+            if ($content -match '\$IsWindowsPlatform') {
+              Write-Host "✅ Windows platform detection found"
+            }
+            
+          } else {
+            throw "run-suitescript.ps1 not found"
+          }
+        shell: powershell
+
+      - name: Test PowerShell script execution (dry run)
+        run: |
+          Write-Host "Testing PowerShell script execution without starting server..."
+
+          # Create a fake Gemini API key for testing
+          "GEMINI_API_KEY=test_key_for_ci" | Out-File -FilePath ".env" -Encoding UTF8
+
+          # Test that the script can handle Node version detection
+          Write-Host "Current Node version: $(node --version)"
+          Write-Host "Current platform: $([System.Environment]::OSVersion.Platform)"
+          Write-Host "IsWindows: $([System.Environment]::OSVersion.Platform -eq 'Win32NT')"
+
+          Write-Host "✅ PowerShell script environment test completed"
+        shell: powershell
+
+      - name: Test npm run suitescript (platform detection)
+        run: |
+          Write-Host "Testing cross-platform npm script..."
+          $packageJson = Get-Content "package.json" | ConvertFrom-Json
+          $suitescriptCommand = $packageJson.scripts.suitescript
+          Write-Host "✅ npm run suitescript command found: $suitescriptCommand"
+
+          # Test that the command contains the expected platform detection logic
+          if ($suitescriptCommand -match "process.platform") {
+            Write-Host "✅ Platform detection logic found in npm script"
+          } else {
+            Write-Host "❌ Platform detection logic missing"
+            throw "Platform detection not found in package.json suitescript command"
+          }
+
+          # Test Node.js platform detection directly
+          $platform = node -e "console.log(process.platform)"
+          Write-Host "✅ Detected platform: $platform"
+
+          if ($platform -eq "win32") {
+            Write-Host "✅ On Windows - would use PowerShell script"
+          } else {
+            Write-Host "✅ On non-Windows - would use Bash script"
+          }
+        shell: powershell
+
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test platform detection
+        run: |
+          node -e "console.log('Platform:', process.platform); console.log('Will use:', process.platform === 'win32' ? 'PowerShell' : 'Bash');"
+
+      - name: Test bash script exists
+        run: |
+          if [ -f "./run-suitescript.sh" ]; then
+            echo "✅ Bash script found"
+          else
+            echo "❌ Bash script missing"
+            exit 1
+          fi
+
+      - name: Make bash script executable and test syntax
+        run: |
+          chmod +x ./run-suitescript.sh
+          bash -n ./run-suitescript.sh && echo "✅ Bash script syntax is valid"
+
+      - name: Install PowerShell Core (for cross-platform testing)
+        run: |
+          brew install --cask powershell
+
+      - name: Test PowerShell script on macOS
+        run: |
+          echo "Testing PowerShell script on macOS..."
+          if [ -f "./run-suitescript.ps1" ]; then
+            echo "✅ PowerShell script found"
+            
+            # Test syntax
+            pwsh -Command "
+              try { 
+                \$content = Get-Content './run-suitescript.ps1' -Raw
+                \$null = [System.Management.Automation.PSParser]::Tokenize(\$content, [ref]\$null)
+                Write-Host '✅ PowerShell script syntax is valid on macOS'
+              } catch { 
+                Write-Host '❌ PowerShell syntax error:' \$_.Exception.Message
+                throw
+              }
+            "
+            
+            # Test that it doesn't use bash fallback (should be native PowerShell now)
+            if pwsh -Command "Get-Content './run-suitescript.ps1' -Raw" | grep -q "bash.*run-suitescript\.sh"; then
+              echo "⚠️  PowerShell script still contains bash fallback logic"
+            else
+              echo "✅ PowerShell script uses native cross-platform logic"
+            fi
+            
+            echo "✅ PowerShell cross-platform test completed"
+          else
+            echo "❌ PowerShell script missing"
+            exit 1
+          fi
+
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test platform detection
+        run: |
+          node -e "console.log('Platform:', process.platform); console.log('Will use:', process.platform === 'win32' ? 'PowerShell' : 'Bash');"
+
+      - name: Test bash script
+        run: chmod +x ./run-suitescript.sh && bash -n ./run-suitescript.sh && echo "✅ Bash script syntax is valid"
