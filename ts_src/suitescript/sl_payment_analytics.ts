@@ -333,7 +333,7 @@ function getTopRiskCustomers(): any[] {
   try {
     const customerSearch = search.create({
       type: "customer",
-      filters: [["balance", "greaterthan", "5000"]],
+      filters: [["balance", "greaterthan", "40000"]],
       columns: [
         "internalid",
         "entityid",

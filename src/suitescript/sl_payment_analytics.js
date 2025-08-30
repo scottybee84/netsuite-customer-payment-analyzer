@@ -302,7 +302,7 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
         try {
             const customerSearch = search.create({
                 type: "customer",
-                filters: [["balance", "greaterthan", "5000"]],
+                filters: [["balance", "greaterthan", "40000"]],
                 columns: [
                     "internalid",
                     "entityid",
