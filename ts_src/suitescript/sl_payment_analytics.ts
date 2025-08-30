@@ -43,7 +43,9 @@ export function onRequest(ctx: any) {
     } else if (action === "getTopRiskCustomers") {
       try {
         const riskCustomers = getTopRiskCustomers();
-        ctx.response.write(JSON.stringify(createSuccessResponse({ riskCustomers })));
+        ctx.response.write(
+          JSON.stringify(createSuccessResponse({ riskCustomers }))
+        );
       } catch (err) {
         log.error({ title: "Risk analysis error", details: String(err) });
         ctx.response.write(JSON.stringify(createErrorResponse(err)));
@@ -80,7 +82,10 @@ function getPaymentAnalytics(customerId: string | number): any {
     const invoices = getCustomerInvoices(customerId);
     const paymentScore = calculatePaymentScore(invoices.invoices);
     const riskAssessment = calculateRiskFactors(customer, invoices.invoices);
-    const recommendations = generateRecommendations(paymentScore, riskAssessment);
+    const recommendations = generateRecommendations(
+      paymentScore,
+      riskAssessment
+    );
 
     return {
       customer,
@@ -130,7 +135,8 @@ function getCustomerInfo(customerId: string | number): any {
           email: result.getValue("email"),
           phone: result.getValue("phone"),
           balance: parseFloat(result.getValue("balance") as string) || 0,
-          creditlimit: parseFloat(result.getValue("creditlimit") as string) || 0,
+          creditlimit:
+            parseFloat(result.getValue("creditlimit") as string) || 0,
           datecreated: result.getValue("datecreated"),
           salesrep: result.getValue("salesrep"),
           terms: result.getValue("terms"),
@@ -158,14 +164,7 @@ function getCustomerInvoices(customerId: string | number): {
     const invoiceSearch = search.create({
       type: "invoice",
       filters: [["entity", "anyof", customerId]],
-      columns: [
-        "tranid",
-        "total",
-        "duedate",
-        "trandate",
-        "status",
-        "terms",
-      ],
+      columns: ["tranid", "total", "duedate", "trandate", "status", "terms"],
     });
 
     const invoices: any[] = [];
@@ -183,13 +182,13 @@ function getCustomerInvoices(customerId: string | number): {
           status: result.getValue("status"),
           terms: result.getValue("terms"),
         };
-        
+
         invoices.push(invoice);
         if (invoice.status !== "Paid") {
           totalAmount += invoice.total;
         }
         count++;
-        
+
         return count < 100;
       });
     }
@@ -218,7 +217,7 @@ function calculatePaymentScore(invoices: any[]): any {
 
   // Calculate overdue rate
   const today = new Date();
-  const overdueInvoices = invoices.filter(inv => {
+  const overdueInvoices = invoices.filter((inv) => {
     if (!inv.duedate || inv.status === "Paid") return false;
     const dueDate = new Date(inv.duedate);
     return today > dueDate;
@@ -230,11 +229,11 @@ function calculatePaymentScore(invoices: any[]): any {
 
   // Calculate outstanding amount impact
   const totalOutstanding = invoices
-    .filter(inv => inv.status !== "Paid")
+    .filter((inv) => inv.status !== "Paid")
     .reduce((sum, inv) => sum + inv.total, 0);
-  
+
   factors.outstanding_amount = totalOutstanding;
-  
+
   if (totalOutstanding > 50000) score -= 20;
   else if (totalOutstanding > 25000) score -= 15;
   else if (totalOutstanding > 10000) score -= 10;
@@ -271,7 +270,7 @@ function calculateRiskFactors(customer: any, invoices: any[]): any {
 
   // Multiple overdue invoices
   const today = new Date();
-  const overdueCount = invoices.filter(inv => {
+  const overdueCount = invoices.filter((inv) => {
     if (!inv.duedate || inv.status === "Paid") return false;
     const dueDate = new Date(inv.duedate);
     return today > dueDate;
@@ -284,7 +283,7 @@ function calculateRiskFactors(customer: any, invoices: any[]): any {
 
   // Large outstanding amount
   const totalOutstanding = invoices
-    .filter(inv => inv.status !== "Paid")
+    .filter((inv) => inv.status !== "Paid")
     .reduce((sum, inv) => sum + inv.total, 0);
 
   if (totalOutstanding > 25000) {
@@ -301,7 +300,10 @@ function calculateRiskFactors(customer: any, invoices: any[]): any {
   return risk;
 }
 
-function generateRecommendations(paymentScore: any, riskAssessment: any): string[] {
+function generateRecommendations(
+  paymentScore: any,
+  riskAssessment: any
+): string[] {
   const recommendations: string[] = [];
 
   if (paymentScore.score < 60) {
@@ -331,12 +333,10 @@ function getTopRiskCustomers(): any[] {
   try {
     const customerSearch = search.create({
       type: "customer",
-      filters: [
-        ["balance", "greaterthan", "5000"],
-      ],
+      filters: [["balance", "greaterthan", "5000"]],
       columns: [
         "internalid",
-        "entityid", 
+        "entityid",
         "companyname",
         "email",
         "balance",
@@ -351,17 +351,19 @@ function getTopRiskCustomers(): any[] {
     if (rs && typeof rs.each === "function") {
       rs.each((result) => {
         const balance = parseFloat(result.getValue("balance") as string) || 0;
-        const creditlimit = parseFloat(result.getValue("creditlimit") as string) || 0;
-        
+        const creditlimit =
+          parseFloat(result.getValue("creditlimit") as string) || 0;
+
         // Calculate risk score
         let riskScore = 0;
         if (balance > creditlimit * 0.9) riskScore += 40;
         else if (balance > creditlimit * 0.7) riskScore += 25;
-        
+
         if (balance > 25000) riskScore += 30;
         else if (balance > 10000) riskScore += 15;
 
-        if (riskScore > 20) { // Only include risky customers
+        if (riskScore > 20) {
+          // Only include risky customers
           customers.push({
             id: result.getValue("internalid"),
             entityid: result.getValue("entityid"),
@@ -370,10 +372,11 @@ function getTopRiskCustomers(): any[] {
             balance: balance,
             creditlimit: creditlimit,
             riskScore: riskScore,
-            utilizationPercent: creditlimit > 0 ? Math.round((balance / creditlimit) * 100) : 0,
+            utilizationPercent:
+              creditlimit > 0 ? Math.round((balance / creditlimit) * 100) : 0,
           });
         }
-        
+
         count++;
         return count < 100;
       });
@@ -393,14 +396,8 @@ function getCashFlowForecast(): any {
   try {
     const invoiceSearch = search.create({
       type: "invoice",
-      filters: [
-        ["status", "anyof", ["Open", "Overdue"]],
-      ],
-      columns: [
-        "total",
-        "duedate",
-        "status",
-      ],
+      filters: [["status", "anyof", ["Open", "Overdue"]]],
+      columns: ["total", "duedate", "status"],
     });
 
     const forecast: any = {
@@ -413,17 +410,19 @@ function getCashFlowForecast(): any {
 
     const today = new Date();
     const rs = invoiceSearch.run();
-    
+
     if (rs && typeof rs.each === "function") {
       rs.each((result) => {
         const total = parseFloat(result.getValue("total") as string) || 0;
         const dueDateStr = result.getValue("duedate") as string;
-        
+
         if (!dueDateStr) return true;
-        
+
         const dueDate = new Date(dueDateStr);
-        const daysDiff = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        
+        const daysDiff = Math.floor(
+          (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
         if (daysDiff < 0) {
           forecast.overdue += total;
         } else if (daysDiff <= 7) {

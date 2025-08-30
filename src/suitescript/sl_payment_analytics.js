@@ -146,14 +146,7 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
             const invoiceSearch = search.create({
                 type: "invoice",
                 filters: [["entity", "anyof", customerId]],
-                columns: [
-                    "tranid",
-                    "total",
-                    "duedate",
-                    "trandate",
-                    "status",
-                    "terms",
-                ],
+                columns: ["tranid", "total", "duedate", "trandate", "status", "terms"],
             });
             const invoices = [];
             let totalAmount = 0;
@@ -199,7 +192,7 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
         const factors = {};
         // Calculate overdue rate
         const today = new Date();
-        const overdueInvoices = invoices.filter(inv => {
+        const overdueInvoices = invoices.filter((inv) => {
             if (!inv.duedate || inv.status === "Paid")
                 return false;
             const dueDate = new Date(inv.duedate);
@@ -210,7 +203,7 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
         score -= overdueRate * 40;
         // Calculate outstanding amount impact
         const totalOutstanding = invoices
-            .filter(inv => inv.status !== "Paid")
+            .filter((inv) => inv.status !== "Paid")
             .reduce((sum, inv) => sum + inv.total, 0);
         factors.outstanding_amount = totalOutstanding;
         if (totalOutstanding > 50000)
@@ -256,7 +249,7 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
         }
         // Multiple overdue invoices
         const today = new Date();
-        const overdueCount = invoices.filter(inv => {
+        const overdueCount = invoices.filter((inv) => {
             if (!inv.duedate || inv.status === "Paid")
                 return false;
             const dueDate = new Date(inv.duedate);
@@ -268,7 +261,7 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
         }
         // Large outstanding amount
         const totalOutstanding = invoices
-            .filter(inv => inv.status !== "Paid")
+            .filter((inv) => inv.status !== "Paid")
             .reduce((sum, inv) => sum + inv.total, 0);
         if (totalOutstanding > 25000) {
             risk.score += 20;
@@ -309,9 +302,7 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
         try {
             const customerSearch = search.create({
                 type: "customer",
-                filters: [
-                    ["balance", "greaterthan", "5000"],
-                ],
+                filters: [["balance", "greaterthan", "5000"]],
                 columns: [
                     "internalid",
                     "entityid",
@@ -338,7 +329,8 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
                         riskScore += 30;
                     else if (balance > 10000)
                         riskScore += 15;
-                    if (riskScore > 20) { // Only include risky customers
+                    if (riskScore > 20) {
+                        // Only include risky customers
                         customers.push({
                             id: result.getValue("internalid"),
                             entityid: result.getValue("entityid"),
@@ -368,14 +360,8 @@ define(["require", "exports", "N/ui/serverWidget", "N/search", "N/log"], functio
         try {
             const invoiceSearch = search.create({
                 type: "invoice",
-                filters: [
-                    ["status", "anyof", ["Open", "Overdue"]],
-                ],
-                columns: [
-                    "total",
-                    "duedate",
-                    "status",
-                ],
+                filters: [["status", "anyof", ["Open", "Overdue"]]],
+                columns: ["total", "duedate", "status"],
             });
             const forecast = {
                 next_7_days: 0,
